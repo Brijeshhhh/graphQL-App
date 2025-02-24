@@ -1,0 +1,346 @@
+# GraphQL API Documentation
+
+## Table of Contents
+- [Overview](#overview)
+- [Base URL](#base-url)
+- [GraphQL Schema](#graphql-schema)
+- [Queries](#queries)
+- [Mutations](#mutations)
+- [Error Handling](#error-handling)
+- [Example Usage](#example-usage)
+
+## Overview
+This API provides GraphQL endpoints for managing products and categories in an e-commerce system. It supports operations for creating, reading, updating, and deleting both products and categories.
+
+## Base URL
+```
+http://localhost:8080/graphql
+```
+
+GraphiQL Interface: `http://localhost:8080/graphiql`
+
+## GraphQL Schema
+
+### Types
+
+#### Product
+```graphql
+type Product {
+    id: ID!
+    name: String
+    price: String
+    category: Category!
+}
+```
+
+#### Category
+```graphql
+type Category {
+    id: ID!
+    name: String
+    products: [Product]
+}
+```
+
+## Queries
+
+### 1. Get Products by Name
+Retrieve products by their name (case-insensitive search).
+
+```graphql
+query {
+    productByName(productName: String): [Product]
+}
+```
+
+Example:
+```graphql
+query {
+    productByName(productName: "wifi") {
+        id
+        name
+        price
+        category {
+            name
+        }
+    }
+}
+```
+
+### 2. Get Product by ID
+Retrieve a single product by its ID.
+
+```graphql
+query {
+    productById(id: ID!): Product
+}
+```
+
+Example:
+```graphql
+query {
+    productById(id: "1") {
+        id
+        name
+        price
+        category {
+            name
+        }
+    }
+}
+```
+
+### 3. Get All Categories
+Retrieve all categories with their associated products.
+
+```graphql
+query {
+    allCategories: [Category]
+}
+```
+
+Example:
+```graphql
+query {
+    allCategories {
+        id
+        name
+        products {
+            id
+            name
+            price
+        }
+    }
+}
+```
+
+## Mutations
+
+### Product Mutations
+
+#### 1. Create Product
+Create a new product in a specific category.
+
+```graphql
+mutation {
+    createProduct(
+        name: String!
+        price: String!
+        categoryId: ID!
+    ): Product
+}
+```
+
+Example:
+```graphql
+mutation {
+    createProduct(
+        name: "WiFi 6"
+        price: "2000"
+        categoryId: "1"
+    ) {
+        id
+        name
+        price
+    }
+}
+```
+
+#### 2. Update Product
+Update an existing product's details.
+
+```graphql
+mutation {
+    updateProduct(
+        id: ID!
+        name: String!
+        price: String!
+        categoryId: ID!
+    ): Product
+}
+```
+
+Example:
+```graphql
+mutation {
+    updateProduct(
+        id: "1"
+        name: "WiFi Updated"
+        price: "1500"
+        categoryId: "1"
+    ) {
+        id
+        name
+        price
+    }
+}
+```
+
+#### 3. Delete Product
+Delete a product by its ID.
+
+```graphql
+mutation {
+    deleteProduct(id: ID!): Boolean
+}
+```
+
+Example:
+```graphql
+mutation {
+    deleteProduct(id: "1")
+}
+```
+
+### Category Mutations
+
+#### 1. Create Category
+Create a new category.
+
+```graphql
+mutation {
+    createCategory(name: String!): Category
+}
+```
+
+Example:
+```graphql
+mutation {
+    createCategory(name: "Wired Devices") {
+        id
+        name
+    }
+}
+```
+
+#### 2. Update Category
+Update an existing category's name.
+
+```graphql
+mutation {
+    updateCategory(
+        id: ID!
+        name: String!
+    ): Category
+}
+```
+
+Example:
+```graphql
+mutation {
+    updateCategory(
+        id: "1"
+        name: "Wireless Devices"
+    ) {
+        id
+        name
+    }
+}
+```
+
+#### 3. Delete Category
+Delete a category by its ID. Note: Cannot delete categories with existing products.
+
+```graphql
+mutation {
+    deleteCategory(id: ID!): Boolean
+}
+```
+
+Example:
+```graphql
+mutation {
+    deleteCategory(id: "1")
+}
+```
+
+## Error Handling
+
+The API returns the following types of errors:
+
+1. **Not Found Errors**
+   - When a product or category ID doesn't exist
+   ```json
+   {
+     "errors": [
+       {
+         "message": "Product not found",
+         "locations": [...],
+         "path": [...]
+       }
+     ]
+   }
+   ```
+
+2. **Validation Errors**
+   - When attempting to create a duplicate category
+   - When required fields are missing
+   - When attempting to delete a category with products
+
+## Example Usage
+
+### Complete Query Example with Nested Data
+```graphql
+query {
+    allCategories {
+        id
+        name
+        products {
+            id
+            name
+            price
+        }
+    }
+}
+```
+
+### Creating a Product with Category Reference
+```graphql
+mutation {
+    createProduct(
+        name: "Enterprise WiFi"
+        price: "5000"
+        categoryId: "1"
+    ) {
+        id
+        name
+        price
+        category {
+            id
+            name
+        }
+    }
+}
+```
+
+## Database Schema
+
+The application uses H2 database with the following schema:
+
+### Categories Table
+```sql
+CREATE TABLE categories (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255)
+);
+```
+
+### Products Table
+```sql
+CREATE TABLE products (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255),
+    price VARCHAR(255),
+    category_id BIGINT,
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+```
+
+## Testing the API
+
+1. Start the application
+2. Access GraphiQL interface at `http://localhost:8080/graphiql`
+3. Access H2 Console at `http://localhost:8080/h2-console` with:
+   - JDBC URL: `jdbc:h2:mem:testdb`
+   - Username: `sa`
+   - Password: (empty)
